@@ -399,10 +399,9 @@ namespace parser{
     std::vector<node_t> fixed;
 
     static const std::map<size_t,size_t> prec_map{
-      {PLUS,1},{MINUS,1},
-      {MULT,2},{DIV,2},{MOD,2},
-      {AND,4},{OR,4},
-      {NOT,99},{DOT,100},
+      {PLUS,5},{MINUS,5},
+      {MULT,10},{DIV,10},{MOD,10},
+      {AND,15},{OR,15},
     };
 
     std::vector<node_t> op_stack;
@@ -420,8 +419,7 @@ namespace parser{
          out_queue.push_back(node);
       }
       else if(node.type == RPAREN){
-        bool bexit = false;
-        while(!bexit){
+        while(true){
           if(op_stack.size() == 0) break;
           node_t op_buffer = *(op_stack.end() - 1);
           if(op_buffer.type == LPAREN){
@@ -438,11 +436,11 @@ namespace parser{
         if(op_stack.size() == 0){
           op_stack.push_back(node);
         }else if(op_stack.size() > 0){
-          while(true){
-            if(op_stack.size() == 0) break;
-            else if((op_stack.end() -1)->type == LPAREN) break;
-            else if(prec_map.at((op_stack.end() -1)->children[0].type) < prec_map.at(node.children[0].type)) break;
-
+          while(
+            op_stack.size() != 0 &&
+            (op_stack.end() -1)->type != LPAREN &&
+            prec_map.at((op_stack.end() -1)->children[0].type) > prec_map.at(node.children[0].type))
+          {
             node_t o = *(op_stack.end() - 1);
             op_stack.pop_back();
             out_queue.push_back(o);
@@ -452,22 +450,30 @@ namespace parser{
       }    
     }
 
-    //for(const auto& s: rop_stack){
-    //  out_queue.push_back(s);
-    //}
-    for(const auto& s: op_stack){
-      out_queue.push_back(s);
+
+    for(size_t i = 0; i < op_stack.size(); i++){
+      out_queue.push_back(op_stack[op_stack.size()- 1 - i]);
     }
 
     auto re = expr_paren(out_queue);
     
     //Group the parenthesis
     //return nodes;
-    //return out_queue;
+    return out_queue;
     return {re};
   }
 
   node_t expr_postfix_eval(const std::vector<node_t> nodes){
+    std::vector<node_t> stack;
+
+    for(size_t i = 0; i < nodes.size(); i++){
+      if(nodes[i].type == EXPR)
+        stack.push_back(expr_postfix_eval(nodes[i].children));
+      else if(nodes[i].type == UN_OP){
+
+      }
+    }
+    
   }
   //node_t expr_postfix_eval(const std::vector<node_t> nodes){
   //  std::vector<node_t> stack;
