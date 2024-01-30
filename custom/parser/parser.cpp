@@ -52,6 +52,8 @@ namespace parser{
     return {EMPTY};
   }
 
+  #define ONLY_FATAL_PRINT
+
   struct state{
     token_t* head;
     size_t token_count;
@@ -105,11 +107,15 @@ namespace parser{
     }
     
     void rep(const std::string& message, const std::string& caller) {
+      #ifndef ONLY_FATAL_PRINT
       err_handler(RED "(error)" RESET + msg(message,caller));
+      #endif
     }
 
     void srep(const std::string& message, const std::string& caller){
+      #ifndef ONLY_FATAL_PRINT
       err_handler(GREEN "(success)" RESET + msg(message,caller));
+      #endif
     }
 
     void frep(const std::string& message, const std::string& caller){
@@ -117,7 +123,9 @@ namespace parser{
     }
 
     void re(size_t index){
+      #ifndef ONLY_FATAL_PRINT
       err_handler( "["  YELLOW + std::string( __FUNCTION__) + RESET "] " GREEN "Recovered" RESET);
+      #endif
       token_index = index;
     }
   };
@@ -385,7 +393,7 @@ namespace parser{
       node_t node = expr_paren_rec(nodes,i);
       return node;
   }
-  
+
   [[gnu::pure,gnu::hot]]
   std::vector<node_t> expr_shunting_yard(std::vector<node_t> nodes){
     std::vector<node_t> fixed;
@@ -393,8 +401,8 @@ namespace parser{
     static const std::map<size_t,size_t> prec_map{
       {PLUS,1},{MINUS,1},
       {MULT,2},{DIV,2},{MOD,2},
-      {AND,3},{OR,3},
-      {NOT,0},{DOT,101},
+      {AND,4},{OR,4},
+      {NOT,99},{DOT,100},
     };
 
     std::vector<node_t> op_stack;
@@ -451,45 +459,45 @@ namespace parser{
       out_queue.push_back(s);
     }
 
+    auto re = expr_paren(out_queue);
+    
     //Group the parenthesis
+    //return nodes;
     //return out_queue;
-    return {expr_paren(out_queue)};
+    return {re};
   }
 
   node_t expr_postfix_eval(const std::vector<node_t> nodes){
-    std::vector<node_t> stack;
-    for(size_t i = 0; i < nodes.size(); i++){
-      if(nodes[i].type == EXPR){
-        stack.push_back(expr_postfix_eval(nodes[i].children));
-      }else if(nodes[i].type == UN_OP){
-        node_t tmp;
-        tmp.type = nodes[i].children[0].type;
-        tmp.children = stack;
-        stack.clear();
-
-        //tmp.children.insert(tmp.children.end(),fin.begin(), fin.end());
-        //fin.clear();
-
-        //by doing this the tree is reversed
-        //which is fine ig
-        stack.push_back(tmp);
-        //fin.push_back(tmp);
-      }
-      //else if(nodes[i].type == LEFT_OP){
-      //  //bring back another stack
-      //  //that is the fin stack
-      //  //problem for future me
-      //}
-      else{
-        stack.push_back(nodes[i]);
-      }
-    }
-
-    //for(const auto& s: stack)
-      //in.push_back(s);
-   
-    return wrap(EXPR,stack);
   }
+  //node_t expr_postfix_eval(const std::vector<node_t> nodes){
+  //  std::vector<node_t> stack;
+  //  std::vector<node_t> fin;
+  //  for(size_t i = 0; i < nodes.size(); i++){
+  //    if(nodes[i].type == EXPR){
+  //      stack.push_back(expr_postfix_eval(nodes[i].children));
+  //    }else if(nodes[i].type == UN_OP){
+  //      node_t tmp;
+  //      tmp.type = nodes[i].children[0].type;
+  //      tmp.children = stack;
+  //      stack.clear();
+
+  //      tmp.children.insert(tmp.children.end(),fin.begin(), fin.end());
+  //      fin.clear();
+
+  //      //stack.push_back(tmp);
+  //      fin.push_back(tmp);
+  //    }else{
+  //      stack.push_back(nodes[i]);
+  //    }
+  //  }
+
+  //  for(const auto& s: stack)
+  //    fin.push_back(s);
+
+  //
+  //  return wrap(EXPR,fin);
+  //}
+
 
   node_t expr_stackchk(state* s, std::vector<node_t> nodes){
       int64_t paren_balance;
@@ -524,8 +532,8 @@ namespace parser{
       // but other than that it is fine :)
       nodes = expr_shunting_yard(nodes);
 
-      //return  wrap(TEST,nodes);
-      return expr_postfix_eval(nodes[0].children);
+      return  wrap(EXPR,nodes);
+      //return expr_postfix_eval(nodes[0].children);
   }
 
   #define expr_false_case(match_func,err)\
@@ -648,7 +656,7 @@ namespace parser{
       exit(EXIT_FAILURE);
     }
     
-    const node_t node = expr_stackchk(s,nodes_stack);
+    const auto& node = expr_stackchk(s,nodes_stack);
 
     return node;
   }

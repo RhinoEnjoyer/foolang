@@ -36,6 +36,7 @@ int main(){
   printf("Parsing...\n");
   parser::tree_t tree = parser::parse(tokens);
   printf(GREEN"Done\n\n" RESET);
+
   parser::node_traverse(&tree.head,parser::node_print); 
 
 
