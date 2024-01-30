@@ -1,0 +1,22 @@
+mem: @import = "mem"
+
+foo: @rec{
+  c: s32;
+  f: f32;
+  z: u32;
+}
+
+
+c_call: @ext @fn(c,b: s32)(s32)
+
+
+fun: @fn(c,b: s32)(s32,f32) = {
+  a: u8 = {10..};
+  b: f128 = 10000.10;
+}
+
+
+
+
+main: @fn(args u8[][]){
+}

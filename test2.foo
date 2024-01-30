@@ -1,0 +1,33 @@
+@import "sys/mmap"
+
+
+
+list: @rec{
+  cap,len: u64;
+  ptr: $T*;
+}
+
+
+
+list_0: @fn($T)(cap: u64, alloc: allocator)(list) = {
+  @ret {cap, 0, alloc.calloc(@sizeof($T)*cap)};
+}
+list_1: @fn(a: []$T, alloc: allocator_view)(list) = {
+  @ret {a.ptr, 0, alloc.calloc(a.size)};
+}
+list_: @fno{list_0, list_1};
+
+
+[list]push: @fn($T)(val: $T){}
+
+
+main: @fn(args: [][]u8)(s32) = {
+  
+  l: list = list_([]u64{1,2,33,100'000'000}, alloca);
+  @defer list_free(l);  
+
+  l.push(10); 
+
+  @ret 0; 
+}
+
