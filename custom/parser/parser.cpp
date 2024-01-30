@@ -447,13 +447,11 @@ namespace parser{
           }
           op_stack.push_back(node);
         }
-      }    
+      }
     }
 
-
-    for(size_t i = 0; i < op_stack.size(); i++){
+    for(size_t i = 0; i < op_stack.size(); i++)
       out_queue.push_back(op_stack[op_stack.size()- 1 - i]);
-    }
 
     auto re = expr_paren(out_queue);
     
