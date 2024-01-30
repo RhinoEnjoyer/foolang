@@ -1,5 +1,5 @@
 #!/bin/bash
-OLVL="1"
+OLVL="0"
 GLVL="0"
 
 
@@ -10,23 +10,23 @@ cd - > /dev/null
 printf "Done\n\n"
 
 printf "Compiling parser...\n"
-(
+time (
   cd ./parser/
     rm parser.so
     clang++ -g$GLVL -O$OLVL -fpic -shared -o parser.so parser.cpp
   cd - > /dev/null
-) &
+) 
 
 printf "Generating and Compiling lexer...\n"
 
-(
+time (
   cd ./parser/lexer
   rm lexer.so
   #  flex -8 -f --header-file=lexer.tab.h --outfile=lexer.tab.c lexer.l
   flex -8 -L -X  --outfile=lexer.tab.c lexer.l
   clang++ -g$GLVL -O$OLVL  -fpic -shared -o lexer.so lexer.cpp
   cd - > /dev/null
-) &
+) 
 
 wait
 printf "Done\n\n"

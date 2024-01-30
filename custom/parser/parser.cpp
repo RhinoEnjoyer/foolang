@@ -28,7 +28,6 @@ namespace parser{
       node_traverse_rec(&c,depth + 1, action); 
     }
   }
-
   void node_traverse(node_t* head,std::function<void(node_t *,size_t)> action){
     node_traverse_rec(head,0,action);
   }
@@ -395,7 +394,7 @@ namespace parser{
       {PLUS,1},{MINUS,1},
       {MULT,2},{DIV,2},{MOD,2},
       {AND,3},{OR,3},
-      {NOT,100},{DOT,101},
+      {NOT,0},{DOT,101},
     };
 
     std::vector<node_t> op_stack;
@@ -475,11 +474,13 @@ namespace parser{
         //which is fine ig
         stack.push_back(tmp);
         //fin.push_back(tmp);
-      }else if(nodes[i].type == LEFT_OP){
-        //bring back another stack
-        //that is the fin stack
-        //problem for future me
-      }else{
+      }
+      //else if(nodes[i].type == LEFT_OP){
+      //  //bring back another stack
+      //  //that is the fin stack
+      //  //problem for future me
+      //}
+      else{
         stack.push_back(nodes[i]);
       }
     }
