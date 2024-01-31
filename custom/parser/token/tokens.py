@@ -94,6 +94,7 @@ TOKENS="""
   RVALUE
   VAR_DECL
   CAST
+  AS
   MEMBER
  
   WRAP

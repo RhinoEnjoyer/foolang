@@ -134,6 +134,7 @@ static std::string token_code_print(size_t type){
   case RVALUE: return "RVALUE"; break;
   case VAR_DECL: return "VAR_DECL"; break;
   case CAST: return "CAST"; break;
+  case AS: return "AS"; break;
   case MEMBER: return "MEMBER"; break;
   case WRAP: return "WRAP"; break;
   case GROUP: return "GROUP"; break;

@@ -20,7 +20,7 @@ namespace lexer{
         {"@sizeof", SIZEOF},{"@typeof", TYPEOF},
         {"@fn", FN},{"@rec", REC},{"@union", UNION},{"@enum", ENUM},
         {"@alias", ALIAS},
-        {"@ret", RET},
+        {"@ret", RET},{"@as",AS}
       };
   
       if(builtin_map.find(text) != builtin_map.end()) 

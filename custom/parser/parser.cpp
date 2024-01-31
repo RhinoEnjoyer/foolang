@@ -52,7 +52,7 @@ namespace parser{
     return {EMPTY};
   }
 
-  #define ONLY_FATAL_PRINT
+  //#define ONLY_FATAL_PRINT
 
   struct state{
     token_t* head;
@@ -290,7 +290,17 @@ namespace parser{
   node_t else_builtin(state* s);
   node_t elif_builtin(state* s);
   node_t func_call(state* s);
+  node_t type(state* s);
 
+  node_t as_builtin(state* s){
+
+    andcase(a,match(AS,s));
+    andcase(l,match(LPAREN,s));
+    andcase(t,type(s));
+    andcase(r,match(RPAREN,s));
+    return wrap(AS,t);
+  }
+  
   node_t uop(state* s){
     node_t node;
     size_t i = rec();
@@ -313,6 +323,7 @@ namespace parser{
       ////std::cout << token_info(peek(1)) << std::endl;
       orcase(node,i,match(NOT,s));
       orcase(node,i,match(POINTER,s));
+      orcase(node,i,as_builtin(s));
         defcase("Unknown unary operator type",node);
     retpoint:
       return wrap(LEFT_OP,node);
@@ -365,45 +376,12 @@ namespace parser{
 
     return wrap(EXPR,ch);
   }
+
   node_t expr_paren(const std::vector<node_t>& nodes){
       size_t i = 0;
       node_t node = expr_paren_rec(nodes,i);
       return node;
   }
-
-  //node_t expr_postfix_eval(const std::vector<node_t> nodes){
-  //  std::vector<node_t> stack;
-  //  std::vector<node_t> fin;
-  //  for(size_t i = 0; i < nodes.size(); i++){
-  //    if(nodes[i].type == EXPR){
-  //      stack.push_back(expr_postfix_eval(nodes[i].children));
-  //    }else if(nodes[i].type == UN_OP){
-  //      node_t tmp;
-  //      tmp.type = nodes[i].children[0].type;
-  //      tmp.children = stack;
-  //      stack.clear();
-
-  //      tmp.children.insert(tmp.children.end(),fin.begin(), fin.end());
-  //      fin.clear();
-
-  //      //stack.push_back(tmp);
-  //      fin.push_back(tmp);
-  //    }else if(nodes[i].type == LEFT_OP){
-  //      node_t tmp;
-  //      tmp.type = nodes[i].children[0].type;
-  //      tmp.children = stack;
-  //      stack.clear();
-  //    }else{
-  //      stack.push_back(nodes[i]);
-  //    }
-  //  }
-
-  //  for(const auto& s: stack)
-  //    fin.push_back(s);
-
-  //
-  //  return wrap(EXPR,fin);
-  //}
 
   node_t expr_postfix_eval(const std::vector<node_t> nodes){
     std::vector<node_t> stack;
@@ -412,8 +390,7 @@ namespace parser{
       if(x.type == EXPR){
         stack.push_back(expr_postfix_eval(x.children));
       }else if(x.type == LEFT_OP){
-        node_t tmp;
-        tmp.type = x.children[0].type;
+        node_t tmp = x.children[0];
 
         node_t o = *(stack.end() - 1);
 
@@ -421,8 +398,7 @@ namespace parser{
         stack.pop_back();
         stack.push_back(tmp);
       }else if(x.type == UN_OP){
-        node_t tmp;
-        tmp.type = x.children[0].type;
+        node_t tmp = x.children[0];
 
         node_t o1 = *(stack.end() - 1);
         node_t o2 = *(stack.end() - 2);
@@ -449,7 +425,7 @@ namespace parser{
       {PLUS,5},{MINUS,5},
       {MULT,10},{DIV,10},{MOD,10},
       {AND,15},{OR,15},{XOR,15},
-      {POINTER,101},{NOT,99},{DOT,101}
+      {AS,98},{NOT,99},{POINTER,101},{DOT,101}
     };
 
     std::vector<node_t> op_stack;
@@ -576,7 +552,7 @@ namespace parser{
      *
      */
 
-    enum{SENTRY,SLPAREN,SRPAREN,SEXPR,SCAST,SLOP,SUOP,SEXIT} state = SENTRY;
+    enum{SENTRY,SLPAREN,SRPAREN,SEXPR,SLOP,SUOP,SEXIT} state = SENTRY;
     std::vector<node_t> nodes_stack;
     bool bexit = false;
     while(!bexit){
@@ -593,16 +569,16 @@ namespace parser{
         case SLPAREN:
             expr_case(match(LPAREN,s), SLPAREN);
             expr_case(expr0(s), SEXPR);
-            expr_case(type(s), SCAST);
             expr_case(lop(s), SLOP);
             expr_exit_case();
           break;
         case SLOP:
             expr_case(match(LPAREN,s), SLPAREN);
+            expr_case(lop(s), SLOP);
             expr_case(expr0(s), SEXPR);
 
             expr_false_case(uop(s), "a left operator can not precede a unary operator");
-            expr_false_case(lop(s), "a left operator can not precede a left operator");
+            //expr_false_case(lop(s), "a left operator can not precede a left operator");
 
             expr_exit_case();
         case SRPAREN: 
@@ -613,14 +589,6 @@ namespace parser{
         case SEXPR: 
             expr_case(uop(s), SUOP);
             expr_case(match(RPAREN,s), SRPAREN);
-            expr_exit_case();
-          break;
-          // maybe replace cast with a @cast()
-        case SCAST:
-            c = match(RPAREN,s);
-            nodes_stack.push_back(c);
-            expr_case(expr0(s), SEXPR); 
-            expr_case(match(LPAREN,s), SLPAREN);
             expr_exit_case();
           break;
         case SUOP: 
