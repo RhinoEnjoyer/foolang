@@ -365,35 +365,82 @@ namespace parser{
 
     return wrap(EXPR,ch);
   }
-
-  // FOUND A BETTER WAY TO DO IT the shunting yard works I guess
-  // Unironicaly I need to find a better way to do this
-  // I can't to like make and then remake the vector every time
-  // I want to make a transformation to this thing
-  // It works doe
-  //node_t expr_lop(const std::vector<node_t>& nodes){
-  //  std::vector<node_t> fin;
-  //  for(size_t i = 0; i < nodes.size(); i++){
-  //    if(nodes[i].type == LEFT_OP){
-  //      i++;
-  //      fin.push_back(nodes[i]);
-  //      fin.push_back(nodes[i-1]);
-  //    }else if(nodes[i].type == EXPR){
-  //      fin.push_back(expr_lop(nodes[i].children));
-  //    }else{
-  //      fin.push_back(nodes[i]);
-  //    }
-  //  }
-
-  //  return wrap(EXPR,fin);
-  //}
-  
   node_t expr_paren(const std::vector<node_t>& nodes){
       size_t i = 0;
       node_t node = expr_paren_rec(nodes,i);
       return node;
   }
 
+  //node_t expr_postfix_eval(const std::vector<node_t> nodes){
+  //  std::vector<node_t> stack;
+  //  std::vector<node_t> fin;
+  //  for(size_t i = 0; i < nodes.size(); i++){
+  //    if(nodes[i].type == EXPR){
+  //      stack.push_back(expr_postfix_eval(nodes[i].children));
+  //    }else if(nodes[i].type == UN_OP){
+  //      node_t tmp;
+  //      tmp.type = nodes[i].children[0].type;
+  //      tmp.children = stack;
+  //      stack.clear();
+
+  //      tmp.children.insert(tmp.children.end(),fin.begin(), fin.end());
+  //      fin.clear();
+
+  //      //stack.push_back(tmp);
+  //      fin.push_back(tmp);
+  //    }else if(nodes[i].type == LEFT_OP){
+  //      node_t tmp;
+  //      tmp.type = nodes[i].children[0].type;
+  //      tmp.children = stack;
+  //      stack.clear();
+  //    }else{
+  //      stack.push_back(nodes[i]);
+  //    }
+  //  }
+
+  //  for(const auto& s: stack)
+  //    fin.push_back(s);
+
+  //
+  //  return wrap(EXPR,fin);
+  //}
+
+  node_t expr_postfix_eval(const std::vector<node_t> nodes){
+    std::vector<node_t> stack;
+
+    for(const auto& x: nodes){
+      if(x.type == EXPR){
+        stack.push_back(expr_postfix_eval(x.children));
+      }else if(x.type == LEFT_OP){
+        node_t tmp;
+        tmp.type = x.children[0].type;
+
+        node_t o = *(stack.end() - 1);
+
+        tmp.children.push_back(o);
+        stack.pop_back();
+        stack.push_back(tmp);
+      }else if(x.type == UN_OP){
+        node_t tmp;
+        tmp.type = x.children[0].type;
+
+        node_t o1 = *(stack.end() - 1);
+        node_t o2 = *(stack.end() - 2);
+
+        tmp.children.push_back(o1);
+        tmp.children.push_back(o2);
+
+        stack.pop_back();
+        stack.pop_back();
+
+        stack.push_back(tmp);
+      }else{
+        stack.push_back(x);
+      }
+    }
+    
+    return wrap(EXPR,stack);
+  }
   [[gnu::pure,gnu::hot]]
   std::vector<node_t> expr_shunting_yard(std::vector<node_t> nodes){
     std::vector<node_t> fixed;
@@ -401,7 +448,8 @@ namespace parser{
     static const std::map<size_t,size_t> prec_map{
       {PLUS,5},{MINUS,5},
       {MULT,10},{DIV,10},{MOD,10},
-      {AND,15},{OR,15},
+      {AND,15},{OR,15},{XOR,15},
+      {POINTER,101},{NOT,99},{DOT,101}
     };
 
     std::vector<node_t> op_stack;
@@ -453,54 +501,14 @@ namespace parser{
     for(size_t i = 0; i < op_stack.size(); i++)
       out_queue.push_back(op_stack[op_stack.size()- 1 - i]);
 
-    auto re = expr_paren(out_queue);
-    
+    auto transform = expr_paren(out_queue);
+    transform = expr_postfix_eval(transform.children); 
     //Group the parenthesis
     //return nodes;
-    return out_queue;
-    return {re};
+    //return out_queue;
+    return {transform.children};
   }
 
-  node_t expr_postfix_eval(const std::vector<node_t> nodes){
-    std::vector<node_t> stack;
-
-    for(size_t i = 0; i < nodes.size(); i++){
-      if(nodes[i].type == EXPR)
-        stack.push_back(expr_postfix_eval(nodes[i].children));
-      else if(nodes[i].type == UN_OP){
-
-      }
-    }
-    
-  }
-  //node_t expr_postfix_eval(const std::vector<node_t> nodes){
-  //  std::vector<node_t> stack;
-  //  std::vector<node_t> fin;
-  //  for(size_t i = 0; i < nodes.size(); i++){
-  //    if(nodes[i].type == EXPR){
-  //      stack.push_back(expr_postfix_eval(nodes[i].children));
-  //    }else if(nodes[i].type == UN_OP){
-  //      node_t tmp;
-  //      tmp.type = nodes[i].children[0].type;
-  //      tmp.children = stack;
-  //      stack.clear();
-
-  //      tmp.children.insert(tmp.children.end(),fin.begin(), fin.end());
-  //      fin.clear();
-
-  //      //stack.push_back(tmp);
-  //      fin.push_back(tmp);
-  //    }else{
-  //      stack.push_back(nodes[i]);
-  //    }
-  //  }
-
-  //  for(const auto& s: stack)
-  //    fin.push_back(s);
-
-  //
-  //  return wrap(EXPR,fin);
-  //}
 
 
   node_t expr_stackchk(state* s, std::vector<node_t> nodes){
